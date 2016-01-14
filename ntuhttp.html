@@ -1,0 +1,35 @@
+<html>
+<header><title>A Sample HTML Data Entry Form</title><header>
+
+<body>
+	<h2 align="left"><a href="https://www3.ntu.edu.sg/home/ehchua/programming/webprogramming/HTTP_Basics.html">A Sample HTML Data Entry Form </a></h2>
+	<form method="get" action="./bin/process">
+		Enter your name:<input type="text" name="name">
+		<br>
+		Enter you password:<input type="password" name="password">
+		<br>
+		Which year?
+			<label><input type="radio" name="year" value="year1">Yr 1</label>
+			<label><input type="radio" name="year" value="year2">Yr 2</label>
+			<label><input type="radio" name="year" value="year1">Yr 3</label>
+			<label><input type="radio" name="year" value="year4">Yr 4</label>
+		<br>
+		Subject Registered:
+			<label><input type="checkbox" name="subject" value="e101">E101 </label>
+			<label><input type="checkbox" name="subject" value="e102">E102</label>
+			<label><input type="checkbox" name="subject" value="e103">E103</label>
+		<br>
+		Select Day:
+		<select name="day"> 
+			<option value="mon">Monday</option> 
+			<option value="wed">Wednesday</option> 
+			<option value="fri">Friday</option> 
+		</select>
+		<br>
+		<textarea rows="5" cols="40">Enter your special request here</textarea>
+		<br>
+		<input type="submit" value="SEND">
+		<input type="reset" value="CLEAR">
+	</form>
+</body>
+</html>
