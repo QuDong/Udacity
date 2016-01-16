@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Sign Up</title>
+    <style type="text/css">
+      .label {text-align: right}
+      .error {color: red}
+    </style>
+  </head>
+
+  <body>
+    <h2>Signup</h2>
+    <form method="post">
+    <table>
+        <tr>
+            <td class=label>Username</td>
+            <td><input type="text" name="username" value={{user_str}}></td>
+            <td class=error>{{name_err}}</td>
+        </tr>
+        <tr>
+            <td class=label>Password</td>
+            <td><input type="password" name="pw1"></td>
+            <td class=error>{{pw1_err}}</td>
+        </tr>
+        <tr>
+            <td class=label>Verify Password</td>
+            <td><input type="password" name="pw2"></td>
+            <td class=error>{{pw2_err}}</td>
+        </tr>
+        <tr>
+            <td class=label>Email (optional)</td>
+            <td><input type="text" name="email" value={{email_str}}></td>
+            <td class=error>{{email_err}}</td>
+        </tr>
+    </table>
+      <input type="submit">
+    </form>
+  </body>
+
+</html>

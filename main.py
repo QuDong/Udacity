@@ -15,22 +15,15 @@
 # limitations under the License.
 #
 import webapp2
-import cgi
+
 import string
 import re
+import os
+import jinja2
 
-form = """
-<form method="post">
-    What is your birthday?
-    <br>
-    <label>Month <input type="text" name="month" value=%(month)s></label>
-    <label>Day <input type="text" name="day" value=%(day)s></label>
-    <label>Year <input type="text" name="year" value=%(year)s></label>
-    <div style="color: red">%(error)s</div>
-    <br><br>
-    <input type="submit">
-</form>
-"""
+templete_dir = os.path.join(os.path.dirname(__file__), 'templetes')  # get the absolute path of templetes
+env = jinja2.Environment(loader=jinja2.FileSystemLoader(templete_dir),
+                         autoescape=True)
 
 # if the method="get", then ?q=qudong is in the url, example: http://localhost:8080/testform?q=qudong
 # if the method="post", then q=qudong is in the HTTP request body, url is : http://localhost:8080/testform
@@ -76,6 +69,10 @@ def validate_year(year):
 
 
 def escape_html(s):
+    """
+    manually build functions to escape html
+    """
+    import cgi  # only used in this function
     # s = s.replace('&', '&amp;')
     # s = s.replace('>', '&gt;')
     # s = s.replace('<', '&lt;')
@@ -90,12 +87,27 @@ def escape_html(s):
     return s
 
 
-class MainPage(webapp2.RequestHandler):
+class BaseHandler(webapp2.RequestHandler):
+    def write(self, *kw, **kwargs):
+        self.response.out.write(*kw, **kwargs)
+
+    def render_str(self, templete, **kwargs):
+        """
+        # >>> from jinja2 import Template
+        # >>> template = Template('Hello {{ name }}!')
+        # >>> template.render(name='John Doe')
+        # u'Hello John Doe!'
+        """
+        t = env.get_template(templete)
+        return t.render(**kwargs)
+
+    def render(self, templete, **kwargs):
+        self.write(self.render_str(templete, **kwargs))
+
+
+class MainPage(BaseHandler):
     def write_form(self, error="", day="", month="", year=""):
-        self.response.out.write(form % {"error": error,
-                                        "day": escape_html(day),
-                                        "month": escape_html(month),
-                                        "year": escape_html(year)})
+        self.render("birthdate.html", error=error, day=day, month=month, year=year)
 
     def get(self):
         self.write_form()  # self.response.out.write(form)
@@ -113,7 +125,7 @@ class MainPage(webapp2.RequestHandler):
         if month and day and year:
             # self.response.out.write("Day:{0} Month:{1} Year:{2}   ".format(day, month, year))
             # self.response.out.write("Thanks! That's a totally valid day!")
-            self.redirect("/thanks")
+            self.redirect("/thanks?year={}&month={}&day={}".format(year, month[:3], day))
         else:
             # self.response.out.write(self.request)
             self.write_form("Date is not valid!", user_day, user_month, user_year)  # self.response.out.write(form)
@@ -121,10 +133,16 @@ class MainPage(webapp2.RequestHandler):
 
 class ThanksPage(webapp2.RequestHandler):
     def get(self):
-        self.response.out.write("Thanks! That's a totally valid day!")
+        month = self.request.get("month")
+        day = self.request.get("day")
+        year = self.request.get("year")
+        self.response.out.write("Thanks! That's a totally valid day!<br>")
+        self.response.out.write("your date of birth is {}-{}-{}".format(day, month, year))
 
 
 class TestPage(webapp2.RequestHandler):
+    """ Just simple functions to test the request"""
+
     def get(self):
         q = self.request.get("q")
         self.response.out.write(self.request)
@@ -134,37 +152,20 @@ class TestPage(webapp2.RequestHandler):
         self.response.out.write(self.request)
 
 
-rot13html = """
-<!DOCTYPE html>
-
-<html>
-  <head>
-    <title>Unit 2 Rot 13</title>
-  </head>
-
-  <body>
-    <h2>Enter some text to ROT13:</h2>
-    <form method="post">
-      <textarea name="text" style="height: 100px; width: 400px;">%(content)s</textarea>
-      <br>
-      <input type="submit">
-    </form>
-  </body>
-
-</html>
-"""
-
-
 def rot13_transfer(_s):
+    """
+    By making use of string.translate, from stack overflow
+    """
     rot13 = string.maketrans(
         "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz",
         "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm")
     return string.translate(_s, rot13)
 
 
-class Rot13Page(webapp2.RequestHandler):
+class Rot13Page(BaseHandler):
     def fill_rot13html(self, s=""):
-        self.response.out.write(rot13html % {'content': s})
+        # self.response.out.write(rot13html % {'content': s})
+        self.render("rot13.html", s=s)
 
     def get(self):
         self.fill_rot13html()
@@ -175,92 +176,30 @@ class Rot13Page(webapp2.RequestHandler):
         # content = uploaded_file.split("=")[1]
         content = self.request.get('text')
 
-        self.fill_rot13html(escape_html(content.encode('rot13')))  # must to have the html escape
-        # self.fill_rot13html(content.encode('rot13'))
-
-        # TEST http request contents
-        # self.response.out.write(self.request.get('text'))
-        # self.response.out.write('<br><br>')
-        # self.response.out.write(uploaded_file)
-        # self.response.out.write('<br><br>')
-        # self.response.out.write(content)
-        # self.response.out.write('<br><br>')
-        # self.response.out.write(rot13_transfer(content))
-
-
-signuphtml = """
-<!DOCTYPE html>
-
-<html>
-  <head>
-    <title>Sign Up</title>
-    <style type="text/css">
-      .label {text-align: right}
-      .error {color: red}
-    </style>
-  </head>
-
-  <body>
-    <h2>Signup</h2>
-    <form method="post">
-    <table>
-        <tr>
-            <td class=label>Username</td>
-            <td><input type="text" name="username" value=%(username)s></td>
-            <td class=error>%(name_err)s</td>
-        </tr>
-        <tr>
-            <td class=label>Password</td>
-            <td><input type="password" name="pw1"></td>
-            <td class=error>%(pw1_err)s</td>
-        </tr>
-        <tr>
-            <td class=label>Verify Password</td>
-            <td><input type="password" name="pw2"></td>
-            <td class=error>%(pw2_err)s</td>
-        </tr>
-        <tr>
-            <td class=label>Email (optional)</td>
-            <td><input type="text" name="email" value=%(email)s></td>
-            <td class=error>%(email_err)s</td>
-        </tr>
-    </table>
-      <input type="submit">
-    </form>
-  </body>
-
-</html>
-"""
+        # self.fill_rot13html((content.encode('rot13')))  # must to have the html escape
+        self.fill_rot13html(content.encode('rot13'))
 
 # todo: to understand how re works
+
+
+
+
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
-PW_RE = re.compile(r"^.{3,20}$")
-EMAIL_RE = re.compile(r"^[\S]+@[\S]+\.[\S]+$")
-
-
 def valid_username(username):
     return USER_RE.match(username)
 
-
+PW_RE = re.compile(r"^.{3,20}$")
 def valid_password(password):
     return PW_RE.match(password)
 
-
+EMAIL_RE = re.compile(r"^[\S]+@[\S]+\.[\S]+$")
 def valid_email(email):
     return EMAIL_RE.match(email)
 
 
-class SignupPage(webapp2.RequestHandler):
-    def fill_signup(self, user_str="", email_str="", name_err="", pw1_err="", pw2_err="", email_err=""):
-        self.response.out.write(signuphtml % {'username': user_str,
-                                              'email': email_str,
-                                              'name_err': name_err,
-                                              'pw1_err': pw1_err,
-                                              'pw2_err': pw2_err,
-                                              'email_err': email_err})
-
+class SignupPage(BaseHandler):
     def get(self):
-        self.fill_signup()
+        self.render("signup.html")
 
     def post(self):
         user_username = self.request.get('username')
@@ -295,7 +234,7 @@ class SignupPage(webapp2.RequestHandler):
             else:
                 email_err = ""
 
-            self.fill_signup(user_str=user_username,
+            self.render('signup.html',user_str=user_username,
                              email_str=user_email,
                              name_err=user_err,
                              pw1_err=pw1_err,
@@ -308,10 +247,10 @@ class SignupPage(webapp2.RequestHandler):
                 '/signup/welcome?username=' + user_username)  # NOTE: how to pass the infor through GET method during redirect
 
 
-class WelcomePage(webapp2.RequestHandler):
+class WelcomePage(BaseHandler):
     def get(self):
         username = self.request.get('username')
-        self.response.out.write("Welcome, {}".format(username))
+        self.write("Welcome, {}".format(username))
 
 
 app = webapp2.WSGIApplication([('/', MainPage),
