@@ -180,19 +180,19 @@ class Rot13Page(BaseHandler):
         self.fill_rot13html(content.encode('rot13'))
 
 # todo: to understand how re works
-
-
-
-
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
+PW_RE = re.compile(r"^.{3,20}$")
+EMAIL_RE = re.compile(r"^[\S]+@[\S]+\.[\S]+$")
+
+
 def valid_username(username):
     return USER_RE.match(username)
 
-PW_RE = re.compile(r"^.{3,20}$")
+
 def valid_password(password):
     return PW_RE.match(password)
 
-EMAIL_RE = re.compile(r"^[\S]+@[\S]+\.[\S]+$")
+
 def valid_email(email):
     return EMAIL_RE.match(email)
 
@@ -234,12 +234,12 @@ class SignupPage(BaseHandler):
             else:
                 email_err = ""
 
-            self.render('signup.html',user_str=user_username,
-                             email_str=user_email,
-                             name_err=user_err,
-                             pw1_err=pw1_err,
-                             pw2_err=pw2_err,
-                             email_err=email_err)
+            self.render('signup.html', user_str=user_username,
+                        email_str=user_email,
+                        name_err=user_err,
+                        pw1_err=pw1_err,
+                        pw2_err=pw2_err,
+                        email_err=email_err)
 
         else:
             # For redirect, default it is using GET, and GET pass params in the URL
@@ -253,11 +253,51 @@ class WelcomePage(BaseHandler):
         self.write("Welcome, {}".format(username))
 
 
+# ===========================
+# HW3 Build a Blog
+# ===========================
+from google.appengine.ext import db
+
+
+class Post(db.Model):
+    title = db.StringProperty(required=True)
+    content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+
+
+class BlogMainPage(BaseHandler):
+    def get(self):
+        posts = db.GqlQuery("SELECT * FROM Post ORDER BY created DESC")
+        self.render('blogmain.html', posts=posts)
+
+
+class NewPostPage(BaseHandler):
+    def render_newpost(self, title="", content="", error=""):
+        self.render('newpost.html', title=title, content=content, error=error)
+
+    def get(self):
+        self.render_newpost()
+
+    def post(self):
+        title = self.request.get("title")
+        content = self.request.get("content")
+
+        if title and content:
+            a = Post(title=title, content=content)
+            a.put()
+            self.redirect('/blog')
+        else:
+            error = "Either Title or content is not filled up!"
+            self.render("newpost.html", title=title, content=content, error=error)
+
+
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/testform', TestPage),
                                ('/thanks', ThanksPage),
                                ('/rot13', Rot13Page),
                                ('/signup', SignupPage),
-                               ('/signup/welcome', WelcomePage)
+                               ('/signup/welcome', WelcomePage),
+                               ('/blog', BlogMainPage),
+                               ('/blog/newpost', NewPostPage),
                                ],
                               debug=True)

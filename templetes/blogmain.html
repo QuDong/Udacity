@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>QD BLOG</title>
+    <style type="text/css"></style>
+  </head>
+
+  <body>
+    <h1 align=center>QD BLOG</h1>
+    {% for post in posts %}
+    <div>
+        <h3 align=left>{{post.title}}</h3> <align=right>{{post.created}}</h4>
+        <hr>
+        <pre>{{post.content}}</pre>
+
+    </div>
+    {% endfor %}
+    
+  </body>
+
+</html>
