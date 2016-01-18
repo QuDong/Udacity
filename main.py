@@ -267,7 +267,8 @@ class Post(db.Model):
 
 class BlogMainPage(BaseHandler):
     def get(self):
-        posts = db.GqlQuery("SELECT * FROM Post ORDER BY created DESC")
+        posts = db.GqlQuery("SELECT * FROM Post ORDER BY created DESC LIMIT 5")
+        # posts = Post.get_by_id([5171003185430528, 6578378068983808])
         self.render('blogmain.html', posts=posts)
 
 
@@ -285,10 +286,16 @@ class NewPostPage(BaseHandler):
         if title and content:
             a = Post(title=title, content=content)
             a.put()
-            self.redirect('/blog')
+            postid = a.key().id()
+            self.redirect('/blog/%s' % postid)
         else:
             error = "Either Title or content is not filled up!"
             self.render("newpost.html", title=title, content=content, error=error)
+
+class BlogPage(BaseHandler):
+    def get(self, posid):
+        post = Post.get_by_id(int(posid),)
+        self.render("post.html", post=post)
 
 
 app = webapp2.WSGIApplication([('/', MainPage),
@@ -297,7 +304,9 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/rot13', Rot13Page),
                                ('/signup', SignupPage),
                                ('/signup/welcome', WelcomePage),
+                               ('/blog/', BlogMainPage),
                                ('/blog', BlogMainPage),
                                ('/blog/newpost', NewPostPage),
+                               ('/blog/(\d+)', BlogPage),
                                ],
                               debug=True)
