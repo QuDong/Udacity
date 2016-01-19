@@ -1,0 +1,46 @@
+.description {
+	max-width: 750px;
+	padding: 1px;
+    border: 1px;
+    margin-left: 10px;
+    font-family: "Century Gothic";
+    color: #7C8B88;
+}
+
+a {
+	color: #7C8B88;
+}
+
+.screenshot {
+	max-width: 400px;
+	padding: 1px;
+    border: 1px;
+    margin-left: 20px;
+}
+
+.app {
+    display: -webkit-flex;
+    display: flex;
+}
+
+.title{
+	background-color: #33BEBE;
+	color: white;
+	font-family: "Georgia";
+	font-size: 45px;
+	max-width: 1150px;
+	padding-left: 500px;
+	padding-top: 50px;
+	padding-bottom: 10px;
+	border: 500px; /*doesn't take effect in this case*/
+	margin: 20px;
+}
+
+
+
+* {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+    box-sizing: border-box;
+} 
