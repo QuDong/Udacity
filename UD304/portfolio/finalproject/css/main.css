@@ -1,0 +1,32 @@
+body {
+	font-family: 'Roboto', sans-serif;
+	font-weight: 300;
+}
+
+.my-title {
+	font-size: 50px;
+	font-weight: 300;
+	margin-bottom: 5px;
+}
+
+.my-intro {
+	margin-top: 0px;
+}
+
+.mainbody h1, p {
+	color: #fff;
+	font-weight: 700;
+}
+
+.mainbody p {
+	color: #fff;
+	font-weight: 300;
+}
+
+
+.mainbody .container {
+	background-image: url(http://livedoor.2.blogimg.jp/hacchaka/imgs/5/c/5c3132a4.jpg);
+	height: 500px;
+	background-repeat: no-repeat;
+  	padding-left: 50px;
+}
