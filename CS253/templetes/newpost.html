@@ -1,28 +1,23 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
 
-<html>
-  <head>
-    <title>QD BLOG</title>
-    <style type="text/css">
-      .error {color: red}
-    </style>
-  </head>
+{% block content %}
 
-  <body>
-    <h1 align=center>QD BLOG</h1>
-    <h3> New Post</h3>
-    <form method="post">
-    subject<br>
-    <input type="text" name="title" style="width: 400px;" value={{title}}>
-    <br><br>
-    blog<br>
-    <textarea name="content" style="height: 100px; width: 400px;">{{content}}</textarea>
-    <br>
-    <div class=error>{{error}}</div>
-    <br>
-    <input type="submit">
-    </form>
+<div class="row">
+  <h3> New Post</h3>
+</div>
+
+<div class = "row">
+  <form method="post">
+  subject<br>
+  <input type="text" name="title" style="width: 400px;" value={{title}}>
+  <br><br>
+  blog<br>
+  <textarea name="content" style="height: 100px; width: 400px;">{{content}}</textarea>
+  <br>
+  <div class=error>{{error}}</div>
+  <br>
+  <input type="submit">
+  </form>
+</div>
     
-  </body>
-
-</html>
+{% endblock %}

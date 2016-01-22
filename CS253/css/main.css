@@ -1,0 +1,51 @@
+body {
+	font-family: 'Roboto', sans-serif;
+	font-weight: 300;
+}
+
+.jumbotron {
+  	background-image:url('http://livedoor.2.blogimg.jp/hacchaka/imgs/5/c/5c3132a4.jpg');
+  	height: 500px;
+  	background-repeat: no-repeat;
+  	background-size: cover;
+}
+
+.jumbotron h1 a  {
+	font-weight: 400;
+	font-size: 70px;
+	color:#efefef;
+	font-weight: bold;
+	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+
+.jumbotron p {
+	font-weight: 400;
+  	font-size: 20px;
+  	color: #fff;
+  	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+
+h3, h4 {
+	margin-bottom: 0px;
+}
+
+.title {
+	font-weight: 400;
+	font-size: 30px;
+}
+
+.created {
+	font-weight: 300;
+	font-size: 15px;
+	padding-top: 12px;
+}
+
+hr {
+	margin-top: 0px;
+	border-width: 1px;
+}
+
+h3 a {
+	color: #5a5a5a;
+}
+

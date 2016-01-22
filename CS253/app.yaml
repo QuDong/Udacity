@@ -9,7 +9,19 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
-- url: .*
+- url: /bootstrap/css
+  static_dir: bootstrap/css
+
+- url: /css
+  static_dir: css
+
+- url: /blog/bootstrap/css
+  static_dir: bootstrap/css
+
+- url: /blog/css
+  static_dir: css
+
+- url: /.*
   script: main.app
 
 libraries:
