@@ -3,6 +3,16 @@ body {
 	font-weight: 300;
 }
 
+.login-area {
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+.login-area a {
+    color: #5a5a5a;
+    font-size: 12px;
+    font-weight: bold;
+}
+
 .jumbotron {
   	background-image:url('http://livedoor.2.blogimg.jp/hacchaka/imgs/5/c/5c3132a4.jpg');
   	height: 500px;
@@ -24,6 +34,7 @@ body {
   	color: #fff;
   	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
 }
+
 
 h3, h4 {
 	margin-bottom: 0px;

@@ -20,6 +20,11 @@ import string
 import re
 import os
 import jinja2
+from google.appengine.ext import db
+import random
+import hashlib
+import string
+import hmac
 
 templete_dir = os.path.join(os.path.dirname(__file__), 'templetes')  # get the absolute path of templetes
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(templete_dir),
@@ -87,6 +92,20 @@ def escape_html(s):
     return s
 
 
+# For generating secure cookies
+secret = 'fart'
+
+
+def make_secure_val(val):
+    return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
+
+
+def check_secure_val(secure_val):
+    val = secure_val.split('|')[0]
+    if secure_val == make_secure_val(val):
+        return val
+
+
 class BaseHandler(webapp2.RequestHandler):
     def write(self, *kw, **kwargs):
         self.response.out.write(*kw, **kwargs)
@@ -102,7 +121,40 @@ class BaseHandler(webapp2.RequestHandler):
         return t.render(**kwargs)
 
     def render(self, templete, **kwargs):
+        kwargs['user'] = self.user
         self.write(self.render_str(templete, **kwargs))
+
+    def set_secure_cookie(self, name, val):
+        cookie_val = make_secure_val(val)
+        self.response.headers.add_header(
+            'Set-Cookie',
+            '%s=%s; Path=/' % (name, cookie_val)
+        )
+
+    def read_secure_cookie(self, name):
+        cookie_val = self.request.cookies.get(name)
+        # http://www.diveintopython.net/power_of_introspection/and_or.html
+        # and-or trick: None, 0 means false, the rest is just value
+        # for and, it will the first false value if there is, or it will return the last value
+        # in this case, it will return check_secure_val(cookie_val), which is user id in the cookie_val
+        return cookie_val and check_secure_val(cookie_val)
+
+    def login(self, user):
+        self.set_secure_cookie('user_id', str(user.key().id()))
+
+    def logout(self):
+        self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
+
+    def initialize(self, *a, **kw):
+        """
+        This a function which is called by google app engine framework every when user
+        make a request. To check if the user is logged in or not, through valid cookie
+        If the user is logged in, self.user will be the User object, otherwise None
+        """
+        webapp2.RequestHandler.initialize(self, *a, **kw)
+        uid = self.read_secure_cookie('user_id')
+
+        self.user = uid and User.by_id(int(uid))
 
 
 class MainPage(BaseHandler):
@@ -179,6 +231,7 @@ class Rot13Page(BaseHandler):
         # self.fill_rot13html((content.encode('rot13')))  # must to have the html escape
         self.fill_rot13html(content.encode('rot13'))
 
+
 # todo: to understand how re works
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 PW_RE = re.compile(r"^.{3,20}$")
@@ -197,23 +250,71 @@ def valid_email(email):
     return EMAIL_RE.match(email)
 
 
+# Password hashing
+def make_salt():
+    return ''.join(random.choice(string.ascii_letters) for x in range(5))
+
+
+def make_pw_hash(name, pw, salt=None):
+    if not salt:
+        salt = make_salt()
+    h = hashlib.sha256(name + pw + salt).hexdigest()
+    return '%s,%s' % (h, salt)
+
+
+def valid_pw(name, pw, h):
+    salt = h.split(',')[1]
+    return h == make_pw_hash(name, pw, salt)
+
+
+# =======================
+# sign up page
+# =======================
+class User(db.Model):
+    name = db.StringProperty(required=True)
+    pw_hash = db.StringProperty(required=True)
+    email = db.StringProperty()
+
+    @classmethod
+    def by_name(cls, name):
+        u = User.all().filter('name =', name).get()
+        return u
+
+    @classmethod
+    def by_id(cls, uid):
+        return User.get_by_id(uid)
+
+    @classmethod
+    def register(cls, name, pw, email=None):
+        pw_hash = make_pw_hash(name, pw)
+        return User(name=name,
+                    pw_hash=pw_hash,
+                    email=email)
+
+    @classmethod
+    def login(cls, name, pw):
+        u = User.by_name(name)
+        if u and valid_pw(name, pw, u.pw_hash):
+            return u
+
+
 class SignupPage(BaseHandler):
     def get(self):
         self.render("signup.html")
 
     def post(self):
-        user_username = self.request.get('username')
-        user_pw1 = self.request.get('pw1')
-        user_pw2 = self.request.get('pw2')
-        user_email = self.request.get('email')
+        self.user_username = self.request.get('username')
+        self.user_pw1 = self.request.get('pw1')
+        self.user_pw2 = self.request.get('pw2')
+        self.user_email = self.request.get('email')
 
-        username = valid_username(user_username)
-        pw1 = valid_password(user_pw1)
-        pw2 = valid_password(user_pw2)
-        pw_same = True if user_pw1 == user_pw2 else False
-        email = valid_email(user_email)
+        username = valid_username(self.user_username)
+        pw1 = valid_password(self.user_pw1)
+        pw2 = valid_password(self.user_pw2)
+        pw_same = True if self.user_pw1 == self.user_pw2 else False
+        email = valid_email(self.user_email)
 
-        if not user_email:  # since it is optional
+        if not self.user_email:  # since it is optional
             email = True
 
         if not (username and pw1 and pw2 and email and pw_same):
@@ -234,17 +335,62 @@ class SignupPage(BaseHandler):
             else:
                 email_err = ""
 
-            self.render('signup.html', user_str=user_username,
-                        email_str=user_email,
+            self.render('signup.html', user_str=self.user_username,
+                        email_str=self.user_email,
                         name_err=user_err,
                         pw1_err=pw1_err,
                         pw2_err=pw2_err,
                         email_err=email_err)
 
         else:
-            # For redirect, default it is using GET, and GET pass params in the URL
-            self.redirect(
-                '/signup/welcome?username=' + user_username)  # NOTE: how to pass the infor through GET method during redirect
+            self.done()
+
+    def done(self, *kw, **kwargs):
+        raise NotImplementedError
+
+
+class Unit2Signup(SignupPage):
+    def done(self):
+        # For redirect, default it is using GET, and GET pass params in the URL
+        self.redirect(
+            '/signup/welcome?username=' + self.user_username)  # NOTE: how to pass the infor through GET method during redirect
+
+
+class BlogSignupPage(SignupPage):
+    def done(self):
+        u = User.by_name(self.user_username)
+        if u:
+            self.render('signup.html', user_str=self.user_username,
+                        email_str=self.user_email,
+                        name_err="That user already exists.")
+        else:
+            u = User.register(self.user_username, self.user_pw1, self.user_email)
+            u.put()
+
+            self.login(u)
+            self.redirect('/blog')
+
+
+class BlogLogin(BaseHandler):
+    def get(self):
+        self.render('login-form.html')
+
+    def post(self):
+        username = self.request.get('username')
+        pwd = self.request.get('password')
+
+        u = User.login(username, pwd)
+        if u:
+            self.login(u)
+            self.redirect('/blog')
+        else:
+            self.render('login-form.html', error="Invalid login")
+
+
+class BlogLogout(BaseHandler):
+    def get(self):
+        self.logout()
+        self.redirect('/blog')
 
 
 class WelcomePage(BaseHandler):
@@ -256,7 +402,7 @@ class WelcomePage(BaseHandler):
 # ===========================
 # HW3 Build a Blog
 # ===========================
-from google.appengine.ext import db
+
 
 
 class Post(db.Model):
@@ -273,13 +419,16 @@ class BlogMainPage(BaseHandler):
 
 
 class NewPostPage(BaseHandler):
-    def render_newpost(self, title="", content="", error=""):
-        self.render('newpost.html', title=title, content=content, error=error)
-
     def get(self):
-        self.render_newpost()
+        if self.user:
+            self.render('newpost.html')
+        else:
+            self.redirect('/login')
 
     def post(self):
+        if not self.user:
+            self.redirect('/blog')
+
         title = self.request.get("title")
         content = self.request.get("content")
 
@@ -292,9 +441,10 @@ class NewPostPage(BaseHandler):
             error = "Either Title or content is not filled up!"
             self.render("newpost.html", title=title, content=content, error=error)
 
+
 class BlogPage(BaseHandler):
     def get(self, posid):
-        post = Post.get_by_id(int(posid),)
+        post = Post.get_by_id(int(posid), )
         self.render("post.html", post=post)
 
 
@@ -302,7 +452,10 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/testform', TestPage),
                                ('/thanks', ThanksPage),
                                ('/rot13', Rot13Page),
-                               ('/signup', SignupPage),
+                               ('/unit2/signup', Unit2Signup),
+                               ('/signup', BlogSignupPage),
+                               ('/login', BlogLogin),
+                               ('/logout', BlogLogout),
                                ('/signup/welcome', WelcomePage),
                                ('/blog', BlogMainPage),
                                ('/blog/newpost', NewPostPage),

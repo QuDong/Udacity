@@ -1,27 +1,42 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title>QD BLOG</title>
     <link href='https://fonts.googleapis.com/css?family=Roboto:400,300,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="css/main.css">
-  </head>
+</head>
 
-  <body>
-    <div class="jumbotron">
-      <div class="container">
+<body>
+<div class="login-area">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-10"></div>
+            {% if user %}
+            <div class="col-md-1"><a href="/blog">{{user.name}}</a></div>
+            <div class="col-md-1"><a href="/logout">LOG OUT</a></div>
+            {% else %}
+            <div class="col-md-1"><a href="/login">LOG IN</a></div>
+            <div class="col-md-1"><a href="/signup">SIGN UP</a></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="jumbotron">
+    <div class="container">
         <h1><a href="/blog">QD BLOG</a></h1>
+
         <p>Learning Web Development...</p>
-      </div>
-    </div> 
-    
-    <div id="content">
-      <div class="container">
+    </div>
+</div>
+
+<div class="content">
+    <div class="container">
         {% block content %}
         {% endblock %}
-      </div>
     </div>
-    
-  </body>
+</div>
+
+</body>
 
 </html>
