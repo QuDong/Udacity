@@ -25,6 +25,7 @@ import random
 import hashlib
 import string
 import hmac
+import json
 
 templete_dir = os.path.join(os.path.dirname(__file__), 'templetes')  # get the absolute path of templetes
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(templete_dir),
@@ -145,6 +146,12 @@ class BaseHandler(webapp2.RequestHandler):
     def logout(self):
         self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
 
+    def render_json(self, d):
+        json_text = json.dumps(d)
+        self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
+        self.write(json_text)
+
+
     def initialize(self, *a, **kw):
         """
         This a function which is called by google app engine framework every when user
@@ -155,6 +162,11 @@ class BaseHandler(webapp2.RequestHandler):
         uid = self.read_secure_cookie('user_id')
 
         self.user = uid and User.by_id(int(uid))
+
+        if self.request.url.endswith('.json'):
+            self.format = 'json'
+        else:
+            self.format = 'html'
 
 
 class MainPage(BaseHandler):
@@ -402,20 +414,27 @@ class WelcomePage(BaseHandler):
 # ===========================
 # HW3 Build a Blog
 # ===========================
-
-
-
 class Post(db.Model):
     title = db.StringProperty(required=True)
     content = db.TextProperty(required=True)
     created = db.DateTimeProperty(auto_now_add=True)
+
+    def as_dict(self):
+        post_json = dict()
+        post_json['title'] = self.title
+        post_json['content'] = self.content
+        post_json['created'] = self.created.strftime('%c')
+        return post_json
 
 
 class BlogMainPage(BaseHandler):
     def get(self):
         posts = db.GqlQuery("SELECT * FROM Post ORDER BY created DESC LIMIT 5")
         # posts = Post.get_by_id([5171003185430528, 6578378068983808])
-        self.render('blogmain.html', posts=posts)
+        if self.format == 'html':
+            self.render('blogmain.html', posts=posts)
+        else:
+            self.render_json([p.as_dict() for p in posts])
 
 
 class NewPostPage(BaseHandler):
@@ -445,7 +464,13 @@ class NewPostPage(BaseHandler):
 class BlogPage(BaseHandler):
     def get(self, posid):
         post = Post.get_by_id(int(posid), )
-        self.render("post.html", post=post)
+        if not post:
+            self.error(404)
+            return
+        if self.format == 'html':
+            self.render("post.html", post=post)
+        else:
+            self.render_json(post.as_dict())
 
 
 app = webapp2.WSGIApplication([('/', MainPage),
@@ -457,8 +482,8 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/login', BlogLogin),
                                ('/logout', BlogLogout),
                                ('/signup/welcome', WelcomePage),
-                               ('/blog', BlogMainPage),
+                               ('/blog(?:.json)?', BlogMainPage),  # json re
                                ('/blog/newpost', NewPostPage),
-                               ('/blog/(\d+)', BlogPage),
+                               ('/blog/(\d+)(?:.json)?', BlogPage),  # json re
                                ],
                               debug=True)
